@@ -23,12 +23,34 @@ def main(argv=None):
         PentestTUIApp().run()
         return 0
     if args.list_plugins:
-        print("No plugins installed")
+        list_plugins()
+        return 0
     if args.check_tools:
         check_external_tools()
         return 0
 
 
+
+
+def list_plugins():
+    """List all discovered plugins."""
+    from src.core.registry import get_registry
+    
+    print("Discovering plugins...\n")
+    registry = get_registry()
+    plugins = registry.discover_plugins()
+    
+    if not plugins:
+        print("No plugins found.")
+        return
+    
+    print(f"Found {len(plugins)} plugin(s):\n")
+    
+    for plugin_info in registry.list_plugins():
+        print(f"  [{plugin_info['category']:10}] {plugin_info['name']}")
+        print(f"                 {plugin_info['description']}")
+        print(f"                 Version: {plugin_info['version']}")
+        print()
 
 
 def check_external_tools():
@@ -69,3 +91,5 @@ def check_external_tools():
         print("\n[WARNING] Some tools are missing. Install them for full functionality.")
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
