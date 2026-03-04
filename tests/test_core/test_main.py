@@ -6,12 +6,8 @@ def test_build_parser_returns_parser():
     assert hasattr(p, "parse_args")
 
 
-def test_main_runs_and_returns_zero(monkeypatch):
-    # Ensure pytest argv doesn't leak into our app
-    import sys
-
-    monkeypatch.setattr(sys, "argv", ["pentest_tui"])
-    rc = main(None)
+def test_main_runs_and_returns_zero():
+    rc = main(["--list-plugins"])
     assert rc == 0
 
 

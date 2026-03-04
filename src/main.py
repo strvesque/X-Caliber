@@ -1,4 +1,5 @@
 """Entry point for pentest_tui (minimal)."""
+# pyright: reportMissingImports=false
 import argparse
 import sys
 
@@ -16,6 +17,11 @@ def main(argv=None):
     argv = argv or sys.argv[1:]
     parser = build_parser()
     args = parser.parse_args(argv)
+    if not argv:
+        from src.core.app import PentestTUIApp  # type: ignore[reportMissingImports]
+
+        PentestTUIApp().run()
+        return 0
     if args.list_plugins:
         print("No plugins installed")
     if args.check_tools:
