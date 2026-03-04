@@ -1,21 +1,25 @@
 """Textual application scaffold for Pentest TUI."""
 # pyright: reportMissingImports=false
 
+from typing import ClassVar
+
 from textual.app import App, ComposeResult
+from textual.binding import BindingType
 from textual.containers import Horizontal
 from textual.widgets import Header, Static
 
+from src.ui.panel import ContentPanel
 
-class PentestTUIApp(App):
+
+class PentestTUIApp(App[None]):
     """Primary Textual application for the pentesting TUI."""
 
-    TITLE: str = "X-Caliber Pentesting TUI"
-    BINDINGS: list[tuple[str, str, str]] = [
+    BINDINGS: ClassVar[list[BindingType]] = [
         ("q", "quit", "Quit"),
         ("escape", "quit", "Quit"),
         ("tab", "focus_next", "Next panel"),
     ]
-    CSS: str = """
+    CSS: ClassVar[str] = """
     #layout {
         height: 1fr;
     }
@@ -34,8 +38,8 @@ class PentestTUIApp(App):
     }
     """
 
-    def compose(self) -> ComposeResult:
+    def compose(self) -> ComposeResult:  # pyright: ignore[reportImplicitOverride]
         yield Header(show_clock=False)
         with Horizontal(id="layout"):
-            yield Static("Modules", id="sidebar", classes="panel", can_focus=True)
-            yield Static("Content", id="main", classes="panel", can_focus=True)
+            yield Static("Modules", id="sidebar", classes="panel")
+            yield ContentPanel(id="main", classes="panel")
