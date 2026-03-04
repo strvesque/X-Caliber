@@ -4,8 +4,7 @@ def test_content_panel_add_output_appends_text():
     panel = ContentPanel()
     panel.add_output("first line")
 
-    assert panel._deferred_renders  # pyright: ignore[reportPrivateUsage]
-    assert panel._deferred_renders[-1].content == "first line"  # pyright: ignore[reportPrivateUsage]
+    assert panel._last_output == "first line"  # pyright: ignore[reportPrivateUsage]
 
 
 def test_content_panel_add_output_appends_multiple_lines():
@@ -15,5 +14,4 @@ def test_content_panel_add_output_appends_multiple_lines():
     panel.add_output("first line")
     panel.add_output("second line")
 
-    assert len(panel._deferred_renders) == 2  # pyright: ignore[reportPrivateUsage]
-    assert panel._deferred_renders[-1].content == "second line"  # pyright: ignore[reportPrivateUsage]
+    assert panel._last_output == "second line"  # pyright: ignore[reportPrivateUsage]
