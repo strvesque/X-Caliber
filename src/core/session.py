@@ -80,6 +80,76 @@ class SessionManager:
         rows = cast(list[sqlite3.Row], cursor.fetchall())
         return [dict(row) for row in rows]
 
+    def save_command(
+        self,
+        session_id: int,
+        module: str,
+        command: str,
+        params: dict[str, object],
+        stdout: str,
+        stderr: str = "",
+        exit_code: int = 0,
+        duration: float = 0.0,
+    ) -> int:
+        """Save command execution with output. Returns command_id."""
+        import json
+
+        timestamp = self._timestamp()
+        params_json = json.dumps(params)
+
+        # Insert into commands table
+        cmd_cursor = self._connection.execute(
+            """
+            INSERT INTO commands (session_id, module, command, timestamp, params)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (session_id, module, command, timestamp, params_json),
+        )
+
+        if cmd_cursor.lastrowid is None:
+            raise RuntimeError("Failed to insert command")
+
+        command_id = int(cmd_cursor.lastrowid)
+
+        # Insert into outputs table
+        _ = self._connection.execute(
+            """
+            INSERT INTO outputs (command_id, stdout, stderr, exit_code, duration)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (command_id, stdout, stderr, exit_code, duration),
+        )
+
+        self._connection.commit()
+        return command_id
+
+    def load_commands(self, session_id: int) -> list[dict[str, object]]:
+        """Load all commands+outputs for a session."""
+        import json
+
+        cursor = self._connection.execute(
+            """
+            SELECT
+                c.id, c.session_id, c.module, c.command, c.timestamp, c.params,
+                o.stdout, o.stderr, o.exit_code, o.duration
+            FROM commands c
+            LEFT JOIN outputs o ON c.id = o.command_id
+            WHERE c.session_id = ?
+            ORDER BY c.id
+            """,
+            (session_id,),
+        )
+
+        rows = cast(list[sqlite3.Row], cursor.fetchall())
+        result = []
+        for row in rows:
+            row_dict = dict(row)
+            # Parse JSON params back to dict
+            if row_dict.get("params"):
+                row_dict["params"] = json.loads(row_dict["params"])
+            result.append(row_dict)
+
+        return result
     @staticmethod
     def _timestamp() -> str:
         return datetime.now(timezone.utc).isoformat()
