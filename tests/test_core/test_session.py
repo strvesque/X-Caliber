@@ -109,3 +109,124 @@ def test_save_and_load_commands(tmp_path: Path) -> None:
     assert "gobuster" in modules
     assert "sqlmap" in modules
     assert "metasploit" in modules
+
+
+def test_save_and_load_ui_state(tmp_path: Path) -> None:
+    from src.core.session import SessionManager
+
+    db_path = tmp_path / "ui_state.db"
+    manager = SessionManager(str(db_path))
+
+    session_id = manager.create_session("ui_state_test")
+
+    # Save UI state
+    ui_state = {
+        "selected_module": "port_scan",
+        "panel_focus": "main_panel",
+        "scroll_position": 75,
+    }
+    manager.save_ui_state(session_id, ui_state)
+
+    # Load UI state
+    loaded_state = manager.load_ui_state(session_id)
+    assert loaded_state is not None
+    assert loaded_state["selected_module"] == "port_scan"
+    assert loaded_state["panel_focus"] == "main_panel"
+    assert loaded_state["scroll_position"] == 75
+
+
+def test_ui_state_overwrite(tmp_path: Path) -> None:
+    from src.core.session import SessionManager
+
+    db_path = tmp_path / "ui_overwrite.db"
+    manager = SessionManager(str(db_path))
+
+    session_id = manager.create_session("overwrite_test")
+
+    # Save initial state
+    state_v1 = {"selected_module": "encoder", "scroll_position": 0}
+    manager.save_ui_state(session_id, state_v1)
+
+    # Overwrite with new state
+    state_v2 = {"selected_module": "port_scan", "scroll_position": 100}
+    manager.save_ui_state(session_id, state_v2)
+
+    # Verify only latest state is returned
+    loaded = manager.load_ui_state(session_id)
+    assert loaded is not None
+    assert loaded["selected_module"] == "port_scan"
+    assert loaded["scroll_position"] == 100
+
+
+def test_save_and_load_module_variables(tmp_path: Path) -> None:
+    from src.core.session import SessionManager
+
+    db_path = tmp_path / "module_vars.db"
+    manager = SessionManager(str(db_path))
+
+    session_id = manager.create_session("module_vars_test")
+
+    # Save variables for port_scan module
+    port_scan_vars = {
+        "target": "192.168.1.1",
+        "ports": "22,80,443",
+        "scan_type": "stealth",
+    }
+    manager.save_module_variables(session_id, "port_scan", port_scan_vars)
+
+    # Save variables for different module
+    subdomain_vars = {"domain": "example.com", "engines": "google,bing"}
+    manager.save_module_variables(session_id, "subdomain", subdomain_vars)
+
+    # Load port_scan variables
+    loaded_port_scan = manager.load_module_variables(session_id, "port_scan")
+    assert loaded_port_scan is not None
+    assert loaded_port_scan["target"] == "192.168.1.1"
+    assert loaded_port_scan["ports"] == "22,80,443"
+    assert loaded_port_scan["scan_type"] == "stealth"
+
+    # Load subdomain variables
+    loaded_subdomain = manager.load_module_variables(session_id, "subdomain")
+    assert loaded_subdomain is not None
+    assert loaded_subdomain["domain"] == "example.com"
+    assert loaded_subdomain["engines"] == "google,bing"
+
+
+def test_module_variables_overwrite_per_module(tmp_path: Path) -> None:
+    from src.core.session import SessionManager
+
+    db_path = tmp_path / "module_overwrite.db"
+    manager = SessionManager(str(db_path))
+
+    session_id = manager.create_session("module_overwrite")
+
+    # Save initial variables
+    vars_v1 = {"target": "10.0.0.1", "ports": "80"}
+    manager.save_module_variables(session_id, "port_scan", vars_v1)
+
+    # Overwrite with new variables
+    vars_v2 = {"target": "192.168.1.1", "ports": "22,80,443"}
+    manager.save_module_variables(session_id, "port_scan", vars_v2)
+
+    # Verify only latest variables are returned
+    loaded = manager.load_module_variables(session_id, "port_scan")
+    assert loaded is not None
+    assert loaded["target"] == "192.168.1.1"
+    assert loaded["ports"] == "22,80,443"
+
+
+def test_load_nonexistent_state(tmp_path: Path) -> None:
+    from src.core.session import SessionManager
+
+    db_path = tmp_path / "nonexistent.db"
+    manager = SessionManager(str(db_path))
+
+    session_id = manager.create_session("no_state")
+
+    # Try to load UI state without saving first
+    loaded_ui = manager.load_ui_state(session_id)
+    assert loaded_ui is None
+
+    # Try to load module variables without saving first
+    loaded_vars = manager.load_module_variables(session_id, "port_scan")
+    assert loaded_vars is None

@@ -4,32 +4,33 @@ from typing import cast, override
 from textual.message import Message
 from textual.widgets import ListItem
 
-from src.ui.sidebar import ModuleSelected, ModuleSidebar
+from src.ui.sidebar import ModuleSidebar, PluginSelected
 
 
 def test_sidebar_instantiation_and_item_count():
     sidebar = ModuleSidebar()
     assert sidebar is not None
     items = list(sidebar.compose())
-    assert len(items) == len(ModuleSidebar.MODULE_CATEGORIES)
+    assert len(items) == len(sidebar.plugins)
 
 
-def test_sidebar_emits_module_selected_message():
+def test_sidebar_emits_plugin_selected_message():
     class TestSidebar(ModuleSidebar):
         def __init__(self) -> None:
             super().__init__()
-            self.events: list[str] = []
+            self.events: list[object] = []
 
         @override
         def post_message(self, message: Message) -> bool:
-            if isinstance(message, ModuleSelected):
-                self.events.append(message.module_name)
+            if isinstance(message, PluginSelected):
+                self.events.append(message.plugin_cls)
             return True
 
     sidebar = TestSidebar()
-    category = ModuleSidebar.MODULE_CATEGORIES[0]
     items = list(sidebar.compose())
-    first_item = cast(ListItem, next(item for item in items if item.name == category))
+    assert sidebar.plugins
+    first_plugin = sidebar.plugins[0]
+    first_item = cast(ListItem, items[0])
     sidebar.on_list_view_selected(ModuleSidebar.Selected(sidebar, first_item, 0))
 
-    assert sidebar.events == [category]
+    assert sidebar.events == [first_plugin]

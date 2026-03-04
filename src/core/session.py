@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import datetime, timezone
-from typing import cast
+from typing import Any, cast
 
 
 class SessionManager:
@@ -46,6 +46,30 @@ class SessionManager:
                 stderr TEXT,
                 exit_code INTEGER,
                 duration REAL
+            )
+            """
+        )
+        _ = self._connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ui_state (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id INTEGER NOT NULL,
+                state_json TEXT NOT NULL,
+                updated_at TEXT,
+                FOREIGN KEY (session_id) REFERENCES sessions(id)
+            )
+            """
+        )
+        _ = self._connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS module_variables (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id INTEGER NOT NULL,
+                module_name TEXT NOT NULL,
+                variables_json TEXT NOT NULL,
+                updated_at TEXT,
+                FOREIGN KEY (session_id) REFERENCES sessions(id),
+                UNIQUE(session_id, module_name)
             )
             """
         )
@@ -150,6 +174,89 @@ class SessionManager:
             result.append(row_dict)
 
         return result
+
+    def save_ui_state(self, session_id: int, state: dict[str, Any]) -> None:
+        """Save UI state (selected module, focus, scroll) to database."""
+        import json
+
+        timestamp = self._timestamp()
+        state_json = json.dumps(state)
+
+        # Use INSERT OR REPLACE for UPSERT behavior (only one state per session)
+        _ = self._connection.execute(
+            """
+            INSERT OR REPLACE INTO ui_state (id, session_id, state_json, updated_at)
+            VALUES (
+                (SELECT id FROM ui_state WHERE session_id = ?),
+                ?,
+                ?,
+                ?
+            )
+            """,
+            (session_id, session_id, state_json, timestamp),
+        )
+        self._connection.commit()
+
+    def load_ui_state(self, session_id: int) -> dict[str, Any] | None:
+        """Load UI state from database."""
+        import json
+
+        cursor = self._connection.execute(
+            """
+            SELECT state_json FROM ui_state
+            WHERE session_id = ?
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """,
+            (session_id,),
+        )
+
+        row = cast(sqlite3.Row | None, cursor.fetchone())
+        if row is None:
+            return None
+
+        state_json = row["state_json"]
+        return json.loads(state_json)
+
+    def save_module_variables(
+        self, session_id: int, module_name: str, variables: dict[str, Any]
+    ) -> None:
+        """Save module-specific variables (target IPs, wordlists, etc.)."""
+        import json
+
+        timestamp = self._timestamp()
+        variables_json = json.dumps(variables)
+
+        # Use INSERT OR REPLACE with UNIQUE constraint (session_id, module_name)
+        _ = self._connection.execute(
+            """
+            INSERT OR REPLACE INTO module_variables (session_id, module_name, variables_json, updated_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (session_id, module_name, variables_json, timestamp),
+        )
+        self._connection.commit()
+
+    def load_module_variables(
+        self, session_id: int, module_name: str
+    ) -> dict[str, Any] | None:
+        """Load module-specific variables."""
+        import json
+
+        cursor = self._connection.execute(
+            """
+            SELECT variables_json FROM module_variables
+            WHERE session_id = ? AND module_name = ?
+            """,
+            (session_id, module_name),
+        )
+
+        row = cast(sqlite3.Row | None, cursor.fetchone())
+        if row is None:
+            return None
+
+        variables_json = row["variables_json"]
+        return json.loads(variables_json)
     @staticmethod
     def _timestamp() -> str:
         return datetime.now(timezone.utc).isoformat()
