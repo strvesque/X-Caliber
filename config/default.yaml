@@ -1,0 +1,2 @@
+db_path: "sessions.db"
+plugins_dir: "./plugins"

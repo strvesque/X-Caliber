@@ -1,0 +1,22 @@
+[project]
+name = "pentest_tui"
+version = "0.0.1"
+description = "X-Caliber - modular TUI pentesting framework (scaffold)"
+authors = [ { name = "X-Caliber Team" } ]
+requires-python = ">=3.10"
+
+dependencies = [
+    "textual>=0.20.0",
+    "scapy>=2.5.0",
+    "requests>=2.28.0",
+    "pwntools>=4.8.0",
+    "capstone>=4.0.2",
+]
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0"
+pytest-cov = "^4.0"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
