@@ -5,25 +5,9 @@ Provides both identification and cracking capabilities for password hashes.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict
 
-if TYPE_CHECKING:  # pragma: no cover - for static typing only
-    from src.core.plugin import BasePlugin  # type: ignore
-else:
-    # Minimal runtime stub so module can be imported outside of the plugin runner
-    class BasePlugin:  # pragma: no cover - runtime stub only
-        def init(self, config: Dict[str, Any]) -> None:
-            raise NotImplementedError
-
-        def run(self, params: Dict[str, Any]) -> None:
-            raise NotImplementedError
-
-        def stop(self) -> None:
-            pass
-
-        def get_results(self) -> Dict[str, Any]:
-            return {}
-
+from src.core.plugin import BasePlugin
 
 class HashCrackerPlugin(BasePlugin):
     """Plugin that identifies and cracks password hashes.

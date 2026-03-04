@@ -8,27 +8,9 @@ import base64
 import binascii
 import codecs
 import urllib.parse
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict
 
-if TYPE_CHECKING:  # pragma: no cover - for static type checking only
-    from src.core.plugin import BasePlugin  # type: ignore
-else:
-    # At runtime we don't need BasePlugin for execution here; the real
-    # BasePlugin will be available when the plugin system imports this
-    # module. Provide a minimal runtime stub to keep runtime imports safe.
-    class BasePlugin:  # pragma: no cover - runtime stub only
-        def init(self, config: Dict[str, Any]) -> None:
-            raise NotImplementedError
-
-        def run(self, params: Dict[str, Any]) -> None:
-            raise NotImplementedError
-
-        def stop(self) -> None:
-            pass
-
-        def get_results(self) -> Dict[str, Any]:
-            return {}
-
+from src.core.plugin import BasePlugin
 
 class EncoderDecoder(BasePlugin):
     """Plugin that encodes/decodes strings in multiple formats.

@@ -6,25 +6,9 @@ Provides port enumeration, service detection, and version identification.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict
 
-if TYPE_CHECKING:  # pragma: no cover - for static typing only
-    from src.core.plugin import BasePlugin  # type: ignore
-else:
-    # Minimal runtime stub so module can be imported outside of the plugin runner
-    class BasePlugin:  # pragma: no cover - runtime stub only
-        def init(self, config: Dict[str, Any]) -> None:
-            raise NotImplementedError
-
-        def run(self, params: Dict[str, Any]) -> None:
-            raise NotImplementedError
-
-        def stop(self) -> None:
-            pass
-
-        def get_results(self) -> Dict[str, Any]:
-            return {}
-
+from src.core.plugin import BasePlugin
 
 class PortScannerPlugin(BasePlugin):
     """Plugin that scans network ports using nmap.
