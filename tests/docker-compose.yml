@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  dvwa:
+    image: docker.io/vulnerables/web-dvwa:latest
+    container_name: dvwa
+    ports:
+      - "127.0.0.1:8080:80"
+    networks:
+      - xcaliber_test_net
+
+  webgoat:
+    image: docker.io/webgoat/webgoat:latest
+    container_name: webgoat
+    ports:
+      - "127.0.0.1:9001:8080"
+    networks:
+      - xcaliber_test_net
+
+networks:
+  xcaliber_test_net:
+    driver: bridge
