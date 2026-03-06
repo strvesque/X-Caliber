@@ -88,8 +88,18 @@ def exploit(target: str, output: str, verbose: bool, timeout: int, exploit: bool
         click.echo("[EXPLOIT] --exploit flag required. Aborting for safety.")
         raise click.Abort()
     
-    # Check localhost
-    if 'localhost' in target.lower() or target.startswith('127.') and not allow_localhost:
+    # Check localhost - extract host from URL first
+    host = target
+    if '://' in target:
+        # Extract host from URL (remove protocol, path)
+        host = target.split('://')[1].split('/')[0]
+        # Handle IPv6 brackets [::1] and port
+        if host.startswith('['):
+            host = host.split(']')[0][1:]  # Remove [ and ]
+        else:
+            host = host.split(':')[0]  # Remove port for IPv4
+    
+    if ('localhost' in host.lower() or host.startswith('127.') or host.startswith('::1') or host == '::1') and not allow_localhost:
         click.echo("[EXPLOIT] Localhost targeting requires --allow-localhost flag")
         raise click.Abort()
     
