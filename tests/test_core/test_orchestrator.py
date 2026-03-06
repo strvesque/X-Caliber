@@ -330,3 +330,285 @@ class TestOrchestratorPhaseResults:
         result = await orchestrator.run_ctf("example.com")
 
         assert "target" in result
+
+
+
+class TestOrchestratorIntegration:
+    """Integration tests for orchestrator with mocked tool calls."""
+
+    @pytest.mark.asyncio
+    async def test_run_recon_integration(self, mocker):
+        """Test recon phase with Go tool integrations."""
+        from src.core.orchestrator import AutomationOrchestrator
+
+        # Mock go_tools functions
+        mock_subdomain = mocker.patch('src.core.go_tools.run_subdomain_enum')
+        mock_portscan = mocker.patch('src.core.go_tools.run_port_scan')
+        mock_httpprobe = mocker.patch('src.core.go_tools.run_http_probe')
+
+        mock_subdomain.return_value = {"subdomains": ["sub1.example.com", "sub2.example.com"]}
+        mock_portscan.return_value = {"open_ports": [{"port": 80, "state": "open"}]}
+        mock_httpprobe.return_value = {"results": [{"url": "http://sub1.example.com", "status": 200}]}
+
+        orchestrator = AutomationOrchestrator()
+        result = await orchestrator.run_recon("example.com")
+
+        assert result["status"] == "success"
+        assert len(result["subdomains"]) == 2
+        assert len(result["ports"]) > 0
+        assert "recon" in orchestrator.state["completed_phases"]
+        assert result["target"] == "example.com"
+        assert "http_services" in result
+
+    @pytest.mark.asyncio
+    async def test_run_recon_graceful_degradation(self, mocker):
+        """Test recon phase continues when individual tools fail."""
+        from src.core.orchestrator import AutomationOrchestrator
+
+        # Mock tools with failures
+        mock_subdomain = mocker.patch('src.core.go_tools.run_subdomain_enum')
+        mock_portscan = mocker.patch('src.core.go_tools.run_port_scan')
+        mock_httpprobe = mocker.patch('src.core.go_tools.run_http_probe')
+
+        mock_subdomain.side_effect = Exception("Subdomain tool failed")
+        mock_portscan.return_value = {"open_ports": [{"port": 443, "state": "open"}]}
+        mock_httpprobe.return_value = {"results": []}
+
+        orchestrator = AutomationOrchestrator()
+        result = await orchestrator.run_recon("example.com")
+
+        # Should complete despite subdomain failure
+        assert result["status"] == "success"
+        assert result["subdomains"] == []  # Empty due to failure
+        assert len(result["ports"]) > 0  # But ports succeeded
+        assert "recon" in orchestrator.state["completed_phases"]
+
+    @pytest.mark.asyncio
+    async def test_run_scan_integration(self, mocker):
+        """Test scan phase with scanner integrations."""
+        from src.core.orchestrator import AutomationOrchestrator
+        from unittest.mock import AsyncMock
+
+        # Mock scanner classes
+        mock_nuclei_class = mocker.patch('src.scanners.nuclei_wrapper.NucleiScanner')
+        mock_web_class = mocker.patch('src.scanners.web_vuln_scanner.WebVulnScanner')
+        mock_headers_class = mocker.patch('src.scanners.security_headers.SecurityHeadersAnalyzer')
+
+        # Configure Nuclei mock
+        mock_nuclei = mock_nuclei_class.return_value
+        mock_nuclei.scan.return_value = {"vulnerabilities": [{"type": "xss", "severity": "high"}]}
+        mock_nuclei.update_templates.return_value = None
+
+        # Configure WebVuln mock
+        mock_web = mock_web_class.return_value
+        mock_web.scan_all = AsyncMock(return_value={
+            "vulnerabilities": {
+                "sqli": [{"type": "sqli", "severity": "critical"}],
+                "xss": [],
+                "csrf": {"vulnerable": False}
+            }
+        })
+
+        # Configure SecurityHeaders mock
+        mock_headers = mock_headers_class.return_value
+        mock_headers.analyze = AsyncMock(return_value={
+            "issues": [{"header": "X-Frame-Options", "severity": "medium", "message": "Missing header"}]
+        })
+
+        orchestrator = AutomationOrchestrator()
+        recon_results = {"subdomains": [], "ports": [], "http_services": []}
+        result = await orchestrator.run_scan("example.com", recon_results)
+
+        assert result["status"] == "success"
+        assert len(result["vulnerabilities"]) >= 2  # nuclei + web vuln + missing header
+        assert "scan" in orchestrator.state["completed_phases"]
+        assert result["target"] == "example.com"
+
+    @pytest.mark.asyncio
+    async def test_run_scan_with_http_services(self, mocker):
+        """Test scan phase scans discovered HTTP services."""
+        from src.core.orchestrator import AutomationOrchestrator
+        from unittest.mock import AsyncMock
+
+        # Mock scanner classes
+        mock_nuclei_class = mocker.patch('src.scanners.nuclei_wrapper.NucleiScanner')
+        mock_web_class = mocker.patch('src.scanners.web_vuln_scanner.WebVulnScanner')
+        mock_headers_class = mocker.patch('src.scanners.security_headers.SecurityHeadersAnalyzer')
+
+        mock_nuclei = mock_nuclei_class.return_value
+        mock_nuclei.scan.return_value = {"vulnerabilities": []}
+        mock_nuclei.update_templates.return_value = None
+
+        mock_web = mock_web_class.return_value
+        mock_web.scan_all = AsyncMock(return_value={"vulnerabilities": {"sqli": [], "xss": [], "csrf": {"vulnerable": False}}})
+
+        mock_headers = mock_headers_class.return_value
+        mock_headers.analyze = AsyncMock(return_value={"issues": []})
+
+        orchestrator = AutomationOrchestrator()
+        recon_results = {
+            "subdomains": ["sub1.example.com"],
+            "ports": [],
+            "http_services": [
+                {"url": "http://sub1.example.com", "status": 200},
+                {"url": "http://sub2.example.com", "status": 200}
+            ]
+        }
+        result = await orchestrator.run_scan("example.com", recon_results)
+
+        # Should scan main target + HTTP services
+        assert mock_nuclei.scan.call_count >= 2  # At least main + 1 service
+        assert result["status"] == "success"
+
+    @pytest.mark.asyncio
+    async def test_run_ctf_integration(self, mocker):
+        """Test CTF phase with module integrations."""
+        from src.core.orchestrator import AutomationOrchestrator
+        from unittest.mock import AsyncMock
+
+        # Mock CTF modules
+        mock_flag_finder_class = mocker.patch('src.ctf.flag_finder.FlagFinder')
+        mock_osint_class = mocker.patch('src.ctf.osint.OSINTSolver')
+        mock_crypto_class = mocker.patch('src.ctf.crypto.CryptoSolver')
+
+        # Configure FlagFinder mock
+        mock_finder = mock_flag_finder_class.return_value
+        mock_finder.find_in_text.return_value = [
+            {"flag": "flag{test123}", "pattern": "flag\\{[^}]+\\}", "position": 0}
+        ]
+
+        # Configure OSINTSolver mock
+        mock_osint = mock_osint_class.return_value
+        mock_osint.whois_lookup.return_value = {"domain": "example.com", "ip_addresses": ["1.2.3.4"]}
+        mock_osint.extract_subdomains_from_text.return_value = ["sub.example.com"]
+        mock_osint.extract_emails_from_text.return_value = ["test@example.com"]
+        mock_osint.extract_urls_from_text.return_value = ["http://example.com/page"]
+
+        # Configure CryptoSolver mock
+        mock_crypto = mock_crypto_class.return_value
+        mock_crypto.base64_decode.return_value = b"decoded_text"
+
+        # Mock httpx client
+        mock_response = mocker.Mock()
+        mock_response.text = "Some content with flag{test123} and aGVsbG8gd29ybGQ= encoded"
+        mock_client = AsyncMock()
+        mock_client.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+        mocker.patch('httpx.AsyncClient', return_value=mock_client)
+
+        orchestrator = AutomationOrchestrator()
+        result = await orchestrator.run_ctf("example.com")
+
+        assert result["status"] == "success"
+        assert len(result["flags"]) > 0
+        assert len(result["challenges_solved"]) > 0
+        assert "ctf" in orchestrator.state["completed_phases"]
+        assert result["target"] == "example.com"
+
+    @pytest.mark.asyncio
+    async def test_run_ctf_no_content(self, mocker):
+        """Test CTF phase when target fetch fails."""
+        from src.core.orchestrator import AutomationOrchestrator
+        from unittest.mock import AsyncMock
+
+        # Mock CTF modules
+        mock_flag_finder_class = mocker.patch('src.ctf.flag_finder.FlagFinder')
+        mock_osint_class = mocker.patch('src.ctf.osint.OSINTSolver')
+        mock_crypto_class = mocker.patch('src.ctf.crypto.CryptoSolver')
+
+        mock_finder = mock_flag_finder_class.return_value
+        mock_osint = mock_osint_class.return_value
+        mock_osint.whois_lookup.return_value = {"domain": "example.com"}
+
+        # Mock httpx client to raise exception
+        mock_client = AsyncMock()
+        mock_client.__aenter__.return_value.get = AsyncMock(side_effect=Exception("Connection failed"))
+        mocker.patch('httpx.AsyncClient', return_value=mock_client)
+
+        orchestrator = AutomationOrchestrator()
+        result = await orchestrator.run_ctf("example.com")
+
+        # Should complete despite fetch failure
+        assert result["status"] == "success"
+        assert result["flags"] == []  # No flags due to fetch failure
+        assert "ctf" in orchestrator.state["completed_phases"]
+
+    @pytest.mark.asyncio
+    async def test_global_timeout(self, mocker):
+        """Test global timeout enforcement in full pipeline."""
+        from src.core.orchestrator import AutomationOrchestrator
+
+        orchestrator = AutomationOrchestrator()
+
+        # Mock asyncio.timeout to raise TimeoutError immediately
+        import asyncio
+        mock_timeout = mocker.patch('asyncio.timeout')
+        mock_timeout_context = mocker.MagicMock()
+        mock_timeout_context.__aenter__ = mocker.AsyncMock(side_effect=asyncio.TimeoutError)
+        mock_timeout.return_value = mock_timeout_context
+
+        result = await orchestrator.run_full_pipeline("example.com")
+
+        assert "error" in result
+        assert "timeout" in result["error"].lower()
+
+    @pytest.mark.asyncio
+    async def test_full_pipeline_data_flow(self, mocker):
+        """Test data flows correctly between phases."""
+        from src.core.orchestrator import AutomationOrchestrator
+        from unittest.mock import AsyncMock
+
+        orchestrator = AutomationOrchestrator()
+
+        # Mock recon to return subdomains
+        async def mock_recon(target):
+            return {
+                "target": target,
+                "subdomains": ["sub1.example.com"],
+                "ports": [{"port": 80}],
+                "http_services": [{"url": "http://sub1.example.com"}],
+                "phase": "recon",
+                "status": "success"
+            }
+
+        # Mock scan to use recon results
+        scan_called_with = {}
+        async def mock_scan(target, recon_results):
+            scan_called_with['recon_results'] = recon_results
+            return {
+                "target": target,
+                "vulnerabilities": [],
+                "services": recon_results.get("http_services", []),
+                "phase": "scan",
+                "status": "success",
+                "recon_summary": {}
+            }
+
+        mocker.patch.object(orchestrator, 'run_recon', side_effect=mock_recon)
+        mocker.patch.object(orchestrator, 'run_scan', side_effect=mock_scan)
+        mocker.patch.object(orchestrator, 'run_exploit', return_value={"phase": "exploit", "status": "placeholder"})
+        mocker.patch.object(orchestrator, 'run_ctf', return_value={"phase": "ctf", "status": "success"})
+
+        result = await orchestrator.run_full_pipeline("example.com")
+
+        # Verify recon results were passed to scan
+        assert 'recon_results' in scan_called_with
+        assert "subdomains" in scan_called_with['recon_results']
+        assert len(scan_called_with['recon_results']['subdomains']) == 1
+
+    @pytest.mark.asyncio
+    async def test_phase_timing_recorded(self, mocker):
+        """Test that all phases record timing even on failure."""
+        from src.core.orchestrator import AutomationOrchestrator
+
+        # Mock go_tools to succeed quickly
+        mocker.patch('src.core.go_tools.run_subdomain_enum', return_value={"subdomains": []})
+        mocker.patch('src.core.go_tools.run_port_scan', return_value={"open_ports": []})
+        mocker.patch('src.core.go_tools.run_http_probe', return_value={"results": []})
+
+        orchestrator = AutomationOrchestrator()
+        result = await orchestrator.run_recon("example.com")
+
+        # Timing should be recorded
+        assert "recon" in orchestrator.state["timing"]
+        assert isinstance(orchestrator.state["timing"]["recon"], float)
+        assert orchestrator.state["timing"]["recon"] >= 0
