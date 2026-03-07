@@ -1,0 +1,26 @@
+{
+  "target": "https://spada.upnyk.ac.id/",
+  "flags": [],
+  "challenges_solved": [
+    {
+      "type": "osint",
+      "data": {
+        "whois": {
+          "domain": "https://spada.upnyk.ac.id/",
+          "timestamp": "2026-03-07T20:04:54.455315+00:00",
+          "ip_addresses": [],
+          "mx_records": [],
+          "errors": [
+            "DNS lookup failed: [Errno 11001] getaddrinfo failed"
+          ],
+          "valid_domain": false
+        },
+        "subdomains": [],
+        "emails": [],
+        "urls": []
+      }
+    }
+  ],
+  "phase": "ctf",
+  "status": "success"
+}

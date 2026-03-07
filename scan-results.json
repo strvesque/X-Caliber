@@ -1,0 +1,11 @@
+{
+  "target": "https://spada.upnyk.ac.id/",
+  "vulnerabilities": [],
+  "services": [],
+  "phase": "scan",
+  "status": "success",
+  "recon_summary": {
+    "subdomains_scanned": 0,
+    "ports_scanned": 0
+  }
+}
