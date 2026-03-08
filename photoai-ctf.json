@@ -1,0 +1,26 @@
+{
+  "target": "https://photoai.com/",
+  "flags": [],
+  "challenges_solved": [
+    {
+      "type": "osint",
+      "data": {
+        "whois": {
+          "domain": "https://photoai.com/",
+          "timestamp": "2026-03-08T17:29:11.244013+00:00",
+          "ip_addresses": [],
+          "mx_records": [],
+          "errors": [
+            "DNS lookup failed: [Errno 11001] getaddrinfo failed"
+          ],
+          "valid_domain": false
+        },
+        "subdomains": [],
+        "emails": [],
+        "urls": []
+      }
+    }
+  ],
+  "phase": "ctf",
+  "status": "success"
+}

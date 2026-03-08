@@ -1,0 +1,40 @@
+{
+  "target": "https://photoai.com/",
+  "vulnerabilities": [
+    {
+      "type": "missing_security_header",
+      "severity": "critical",
+      "header": "CSP",
+      "message": "Missing Content-Security-Policy",
+      "target": "https://photoai.com/"
+    },
+    {
+      "type": "missing_security_header",
+      "severity": "medium",
+      "header": "X-Frame-Options",
+      "message": "Missing X-Frame-Options",
+      "target": "https://photoai.com/"
+    },
+    {
+      "type": "missing_security_header",
+      "severity": "medium",
+      "header": "X-Content-Type-Options",
+      "message": "Missing X-Content-Type-Options",
+      "target": "https://photoai.com/"
+    },
+    {
+      "type": "missing_security_header",
+      "severity": "low",
+      "header": "X-XSS-Protection",
+      "message": "Missing X-XSS-Protection",
+      "target": "https://photoai.com/"
+    }
+  ],
+  "services": [],
+  "phase": "scan",
+  "status": "success",
+  "recon_summary": {
+    "subdomains_scanned": 5,
+    "ports_scanned": 0
+  }
+}

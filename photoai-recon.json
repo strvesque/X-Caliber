@@ -1,0 +1,14 @@
+{
+  "target": "photoai.com",
+  "subdomains": [
+    "pay.photoai.com",
+    "r2-us-west.photoai.com",
+    "r2.photoai.com",
+    "sa.photoai.com",
+    "www.photoai.com"
+  ],
+  "ports": [],
+  "http_services": [],
+  "phase": "recon",
+  "status": "success"
+}
