@@ -62,7 +62,7 @@ def _run_and_parse(cmd: List[str], timeout: int) -> Dict[str, Any]:
 
 def run_subdomain_enum(
     target: str,
-    binary_path: str = "./recon_go/xcal-subdomain",
+    binary_path: str = "./recon_go/xcal-subdomain.exe",
     timeout: int = 300,
 ) -> Dict[str, Any]:
     """Run Go subdomain enumerator and return parsed results.
@@ -98,7 +98,7 @@ def run_subdomain_enum(
 def run_port_scan(
     target: str,
     ports: str = "1-1000",
-    binary_path: str = "./recon_go/xcal-portscan",
+    binary_path: str = "./recon_go/xcal-portscan.exe",
     timeout: int = 300,
 ) -> Dict[str, Any]:
     """Run Go port scanner and return parsed results."""
@@ -125,7 +125,7 @@ def run_port_scan(
 def run_http_probe(
     urls: List[str],
     workers: int = 50,
-    binary_path: str = "./recon_go/xcal-httpprobe",
+    binary_path: str = "./recon_go/xcal-httpprobe.exe",
     timeout: int = 300,
 ) -> Dict[str, Any]:
     """Run HTTP probe and return parsed results.
