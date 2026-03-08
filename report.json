@@ -1,0 +1,109 @@
+{
+  "recon": {
+    "target": "http://example.com",
+    "subdomains": [],
+    "ports": [],
+    "http_services": [],
+    "phase": "recon",
+    "status": "success"
+  },
+  "scan": {
+    "target": "http://example.com",
+    "vulnerabilities": [
+      {
+        "type": "missing_security_header",
+        "severity": "critical",
+        "header": "CSP",
+        "message": "Missing Content-Security-Policy",
+        "target": "http://example.com"
+      },
+      {
+        "type": "missing_security_header",
+        "severity": "critical",
+        "header": "HSTS",
+        "message": "Missing HSTS",
+        "target": "http://example.com"
+      },
+      {
+        "type": "missing_security_header",
+        "severity": "medium",
+        "header": "X-Frame-Options",
+        "message": "Missing X-Frame-Options",
+        "target": "http://example.com"
+      },
+      {
+        "type": "missing_security_header",
+        "severity": "medium",
+        "header": "X-Content-Type-Options",
+        "message": "Missing X-Content-Type-Options",
+        "target": "http://example.com"
+      },
+      {
+        "type": "missing_security_header",
+        "severity": "low",
+        "header": "X-XSS-Protection",
+        "message": "Missing X-XSS-Protection",
+        "target": "http://example.com"
+      }
+    ],
+    "services": [],
+    "phase": "scan",
+    "status": "success",
+    "recon_summary": {
+      "subdomains_scanned": 0,
+      "ports_scanned": 0
+    }
+  },
+  "exploit": {
+    "target": "http://example.com",
+    "successful_exploits": [],
+    "shells": [],
+    "phase": "exploit",
+    "status": "placeholder",
+    "scan_summary": {
+      "vulnerabilities_tested": 5
+    }
+  },
+  "ctf": {
+    "target": "http://example.com",
+    "flags": [],
+    "challenges_solved": [
+      {
+        "type": "osint",
+        "data": {
+          "whois": {
+            "domain": "http://example.com",
+            "timestamp": "2026-03-07T20:04:15.702183+00:00",
+            "ip_addresses": [],
+            "mx_records": [],
+            "errors": [
+              "DNS lookup failed: [Errno 11001] getaddrinfo failed"
+            ],
+            "valid_domain": false
+          },
+          "subdomains": [],
+          "emails": [],
+          "urls": []
+        }
+      }
+    ],
+    "phase": "ctf",
+    "status": "success"
+  },
+  "state": {
+    "current_phase": "ctf",
+    "completed_phases": [
+      "recon",
+      "scan",
+      "exploit",
+      "ctf"
+    ],
+    "errors": [],
+    "timing": {
+      "recon": 0.04918050765991211,
+      "scan": 26.157382011413574,
+      "exploit": 0.0,
+      "ctf": 2.8894927501678467
+    }
+  }
+}

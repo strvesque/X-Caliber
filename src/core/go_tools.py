@@ -106,7 +106,7 @@ def run_port_scan(
         logger.error("Binary not found at path: %s", binary_path)
         raise GoToolNotFoundError(f"Binary not found: {binary_path}")
 
-    cmd = [binary_path, "--target", target, "--ports", ports, "--json"]
+    cmd = [binary_path, target, "--ports", ports, "--json"]
     data = _run_and_parse(cmd, timeout)
 
     try:
@@ -137,7 +137,7 @@ def run_http_probe(
         raise GoToolNotFoundError(f"Binary not found: {binary_path}")
 
     urls_arg = ",".join(urls)
-    cmd = [binary_path, "--urls", urls_arg, "--workers", str(workers), "--json"]
+    cmd = [binary_path, "--urls", urls_arg, "--workers", str(workers)]
     data = _run_and_parse(cmd, timeout)
 
     try:

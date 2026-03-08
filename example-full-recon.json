@@ -1,0 +1,10 @@
+{
+  "target": "example.com",
+  "subdomains": [
+    "www.example.com"
+  ],
+  "ports": [],
+  "http_services": [],
+  "phase": "recon",
+  "status": "success"
+}

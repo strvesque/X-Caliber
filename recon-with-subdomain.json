@@ -1,0 +1,8 @@
+{
+  "target": "spada.upnyk.ac.id",
+  "subdomains": [],
+  "ports": [],
+  "http_services": [],
+  "phase": "recon",
+  "status": "success"
+}
